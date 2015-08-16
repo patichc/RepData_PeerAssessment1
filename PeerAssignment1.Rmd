@@ -1,0 +1,235 @@
+---
+title: "Reproducible Research - Peer Assignment 1"
+author: "Patricia"
+---
+
+*General Options*
+
+```{r setoptions}
+library(knitr)
+opts_chunk$set(echo=TRUE)
+currDatetime <- format(Sys.time(), "%a %b %d %X %Y")
+```
+*This document was generated on `r currDatetime`*
+
+
+# Introduction
+*This introduction was taken from the Peer Assignment 1 for the class Reproducible Research offered in Coursera by Johns Hopkins Bloomberg School of Public Health* 
+
+It is now possible to collect a large amount of data about personal
+movement using activity monitoring devices such as a
+[Fitbit](http://www.fitbit.com), [Nike
+Fuelband](http://www.nike.com/us/en_us/c/nikeplus-fuelband), or
+[Jawbone Up](https://jawbone.com/up). These type of devices are part of
+the "quantified self" movement -- a group of enthusiasts who take
+measurements about themselves regularly to improve their health, to
+find patterns in their behavior, or because they are tech geeks. But
+these data remain under-utilized both because the raw data are hard to
+obtain and there is a lack of statistical methods and software for
+processing and interpreting the data.
+
+This assignment makes use of data from a personal activity monitoring
+device. This device collects data at 5 minute intervals through out the
+day. The data consists of two months of data from an anonymous
+individual collected during the months of October and November, 2012
+and include the number of steps taken in 5 minute intervals each day.
+
+#### Data
+
+* Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
+
+The variables included in this dataset are:
+
+* **steps**: Number of steps taking in a 5-minute interval (missing
+    values are coded as `NA`)
+
+* **date**: The date on which the measurement was taken in YYYY-MM-DD
+    format
+
+* **interval**: Identifier for the 5-minute interval in which
+    measurement was taken
+
+
+The dataset is stored in a comma-separated-value (CSV) file and there
+are a total of 17,568 observations in this
+dataset.
+
+# The Assignment
+
+The assignment was organized in five parts, each of them developed in this document.
+
+- Part 1: Loading and preprocessing the data
+- Part 2: What is mean total number of steps taken per day?
+- Part 3: What is the average daily activity pattern?
+- Part 4: Imputing missing values
+- Part 5: Are there differences in activity patterns between weekdays and weekends?
+
+*Note:  Make sure you set as the working as the directory where you will have the activity.zip file downloaded.  All results will be also stored in this directory *
+
+### Part 1: Loading and preprocessing the data
+
+The following R code will load, process and transform the data for the [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) described in the introduction.
+
+After the R code you will find listed the first five rows of the dataset
+
+*Note: I am downloading the file from the source and not using the one provided in GitHub*
+
+
+```{r loadAndTransform}
+# Downloads the file
+url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+setInternet2(use = TRUE)
+download.file(url, "repdata-data-activity.zip", mode="wb")
+
+# Unzip the activity.zip file available in the working directory on the same directory
+unzip ("repdata-data-activity.zip")
+
+# Reads dataset into the activityDF data fame
+activityDF <- read.csv("activity.csv")
+
+# TIDY DATA FOR ANALYSIS
+# Calculates the POSIXct object variable corresponding to the factor variable date 
+# in the dataset to represent it as a datetime and add it as a column to the dataframe
+activityDF <- cbind(activityDF,strptime(as.character(activityDF$date),"%Y-%m-%d"))
+names(activityDF) <- c("steps","dateAsFactor","interval","date")
+
+# List rows 1 thru 5 of the data set (these rows do not have steps counted)
+activityDF[1:5,]
+
+# List rows 644 thru 648 of the data set (these rows have steps counted)
+activityDF[644:649,]
+
+```
+
+### Part 2: What is mean total number of steps taken per day?
+
+In this part we will:
+
+- calculate the **total number of steps per day**, 
+- display a histogram to understand the distribution of **total number of steps per day** taken by the individual 
+- and finally, we will calculate the mean and the median for **total number of steps per day**
+
+```{r totalStepsPerDay}
+
+# aggregates activity data for each date in the dataframe to calculate the total number of steps per day
+activityPerDayDF <- aggregate(steps ~ date, activityDF,sum,na.rm=TRUE)
+
+# List rows 1 thru 5 of the data set
+activityPerDayDF[1:5,]
+
+# display a histogram to understand the distribution of total number of steps per day taken by the individual 
+hist(activityPerDayDF[,"steps"], 
+     col = "lightcyan", 
+     main = "Total number of steps per day",
+     xlab = "steps per day",
+     ylab = "Frequency", 
+     breaks= 9,
+     mar = c(2,3,2,2))
+# display a vertical line to show the mean of the total number of steps per day taken by the individual 
+abline(v=mean(activityPerDayDF$steps),col="red",lty=3)
+
+# calculate the mean and the median for total number of steps per day and other interesting statistics
+summary(activityPerDayDF$steps)
+
+```
+
+### Part 3: What is the average daily activity pattern?
+
+In this part we will start by calculating the average number of steps taken for each 5 minute interval across all days (ignoring NAs) and then we will plot a time series for the intervals.  Finally, we will show some intersting statisitics
+
+
+```{r averageDailyActivityPattern}
+
+# aggregates activity data for each interval in the dataframe to calculate the average number of steps per interval
+activityPerIntervalDF <- aggregate(steps ~ interval, activityDF,mean,na.rm=TRUE)
+
+# List rows 1 thru 5 of the data set
+activityPerIntervalDF[1:5,]
+
+# display a time series to understand the behaviour of average number of steps per interval taken by the individual 
+plot(x = activityPerIntervalDF$interval,
+     y = activityPerIntervalDF$steps,
+     type = "l",
+     main = "Average number of steps per interval",
+     col="darkblue",
+     xlab = "interval",
+     ylab = "average number of steps", 
+     mar = c(2,3,2,2))
+# display a horizontal line to show the average number of steps maximum value
+maxStepsPerInterval <- max(activityPerIntervalDF$steps)
+abline(h=maxStepsPerInterval,col="red",lty=3)
+
+# calculate the max for average number of steps per interval taken by the individual and other interesting statistics
+summary(activityPerIntervalDF$steps)
+
+# calculate the interval for which the average number of steps took its maximum value
+subset(activityPerIntervalDF,steps == maxStepsPerInterval)$interval
+
+```
+
+
+### Part 4: Imputing missing values
+
+The original data set comes with several missing values (coded as NA).  In this section we will calculate the total number of missing values, and then will populate them with the mean for that particlular interval.  
+
+After filling all NAs, We will repeat the part 2 of these assignment with the new dataset and will analize the impact
+
+```{r totalStepsPerDayWithoutNA}
+
+# counts activity data with no value in the number of steps
+totRowsNAd<- nrow(subset(activityDF,is.na(steps)))
+
+# NOT-NA DATA FOR ANALYSIS
+# Populates a new data frame, activityAdjDF, with same data as activityDF adjusting only steps 
+#   If steps has not value it will be populated with the mean for the interval 
+
+activityAdjDF <- activityDF
+activityAdjDF$steps[is.na(activityDF$steps)] <-
+        activityPerIntervalDF$steps[activityPerIntervalDF$interval==
+                                            activityDF$interval[is.na(activityDF$steps)]]
+
+# List rows 1 thru 5 of the data set (these rows did not have steps counted and have been adjusted to the mean of the interval)
+activityAdjDF[1:5,]
+
+# List rows 644 thru 648 of the data set (these rows had steps counted and remain as such)
+activityAdjDF[644:649,]
+
+
+# aggregates activity data for each date in the dataframe to calculate the total number of steps per day
+activityAdjPerDayDF <- aggregate(steps ~ date, activityAdjDF,sum)
+
+# List rows 1 thru 5 of the data set
+activityAdjPerDayDF[1:5,]
+
+# display a histogram to understand the distribution of total number of steps per day taken by the individual 
+hist(activityAdjPerDayDF[,"steps"], 
+     col = "lightcyan", 
+     main = "Total number of steps per day",
+     xlab = "steps per day",
+     ylab = "Frequency", 
+     breaks= 9,
+     mar = c(2,3,2,2))
+# display a vertical line to show the mean of the total number of steps per day taken by the individual 
+abline(v=mean(activityAdjPerDayDF$steps),col="red",lty=3)
+
+# calculate the mean and the median for total number of steps per day and other interesting statistics
+compareStats <- rbind(summary(activityPerDayDF$steps),summary(activityAdjPerDayDF$steps))
+rownames(compareStats) <- c("original","adjusted")
+
+perctgDiff <- round(100*abs(compareStats[1,] - compareStats[2,])/
+                            (compareStats[1,] + compareStats[2,]),3)
+
+compareStats
+perctgDiff
+
+```
+
+My conclusion is that the impact is not significant due to the difference in percentage on the statistics summary presented in the last result
+
+
+### Part 5: Are there differences in activity patterns between weekdays and weekends?
+
+In this last part, we are going to compare the average number of steps taken for each 5-minute interval, separating the analysis for weekdays and weekends.  In this case we will use the dataset that has populated the NA values in steps with the mean for the interval (please refer to the previous section)
+
+
+*Pending*
