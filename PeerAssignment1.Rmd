@@ -231,5 +231,48 @@ My conclusion is that the impact is not significant due to the difference in per
 
 In this last part, we are going to compare the average number of steps taken for each 5-minute interval, separating the analysis for weekdays and weekends.  In this case we will use the dataset that has populated the NA values in steps with the mean for the interval (please refer to the previous section)
 
+```{r averageDailyActivityPatternWeekdayVsWeekend, fig.width=8, fig.height=12}
 
-*Pending*
+# add a column with the datype to the data frame, activityAdjDF (this data frane does not have NA values
+# in the steps variable as they have been populated with the mean fro the iteration)
+
+dayType <- c("weekday","weekday","weekday","weekday","weekday","weekend","weekend")
+TypeOfDay <- dayType[as.numeric(format(activityAdjDF$date,"%u"))]
+activityAdjDF <- cbind(activityAdjDF,TypeOfDay)
+
+# aggregates activity data for each interval in the dataframe to calculate the average number of steps per interval for weekdays
+activityWeekdayPerIntervalDF <- aggregate(steps ~ interval, 
+                                   subset(activityDF,TypeOfDay=="weekday"),mean)
+
+# aggregates activity data for each interval in the dataframe to calculate the average number of steps per interval for weekend days
+activityWeekendPerIntervalDF <- aggregate(steps ~ interval, 
+                                   subset(activityDF,TypeOfDay=="weekend"),mean)
+
+# display two time series to understand the behaviour of average number of steps per interval taken by the individual on weekdays vs. weekends
+
+## Create 2 plot areas
+par(mfcol = c(2,1))
+
+plot(x = activityWeekdayPerIntervalDF$interval,
+     y = activityWeekdayPerIntervalDF$steps,
+     type = "l",
+     main = "Average number of steps per interval on Weekdays",
+     col="darkblue",
+     xlab = "interval",
+     ylab = "average number of steps")
+# display a horizontal line to show the average number of steps maximum value
+maxStepsWeekdayPerInterval <- max(activityWeekdayPerIntervalDF$steps)
+abline(h=maxStepsWeekdayPerInterval,col="red",lty=3)
+
+plot(x = activityWeekendPerIntervalDF$interval,
+     y = activityWeekendPerIntervalDF$steps,
+     type = "l",
+     main = "Average number of steps per interval on Weekend days",
+     col="darkblue",
+     xlab = "interval",
+     ylab = "average number of steps")
+# display a horizontal line to show the average number of steps maximum value
+maxStepsWeekendPerInterval <- max(activityWeekendPerIntervalDF$steps)
+abline(h=maxStepsWeekendPerInterval,col="red",lty=3)
+
+```
